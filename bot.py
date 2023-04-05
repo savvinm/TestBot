@@ -1,5 +1,6 @@
 import logging
 from aiogram import Bot, Dispatcher, executor, types
+import aiogram.utils.markdown as fmt
 
 
 def read_token():
@@ -7,10 +8,23 @@ def read_token():
         token = file.read()
         return token
 
+
 def get_story():
     with open("story.txt", "r") as file:
         story = file.read()
         return story
+
+
+def get_story_keyboard():
+    buttons = [
+        types.InlineKeyboardButton(text="About love 😘😍", callback_data="story_love"),
+        types.InlineKeyboardButton(text="About superheroes 🦸", callback_data="story_superheroes"),
+        types.InlineKeyboardButton(text="About friendship 🤜🤛", callback_data="story_friendship")
+    ]
+    keyboard = types.InlineKeyboardMarkup(row_width=1)
+    keyboard.add(*buttons)
+    return keyboard
+
 
 
 bot = Bot(token=read_token())
@@ -22,9 +36,14 @@ logging.basicConfig(level=logging.INFO)
 @dp.message_handler(commands="start")
 async def cmd_start(message: types.Message):
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
-    buttons = ["Read a story", "Info"]
+    buttons = ["Get a story", "Info"]
     keyboard.add(*buttons)
-    await message.answer("Hello! 👋 \nI'am bot 🤖 and I'am here to give you the best stories to read.", reply_markup=keyboard)
+    await message.answer(
+        fmt.text(
+        fmt.text(fmt.hbold("Hello!"), " 👋 "),
+        fmt.text("\n🤖 here to give you the best stories to read.")
+        ), parse_mode="HTML", reply_markup=keyboard
+    )
 
 
 async def cmd_info(message: types.Message):
@@ -34,35 +53,46 @@ async def cmd_info(message: types.Message):
     ]
     keyboard = types.InlineKeyboardMarkup(row_width=1)
     keyboard.add(*buttons)
-    await message.answer("About this Bot ℹ", reply_markup=keyboard)
+    await message.answer(fmt.hbold("About this Bot ℹ"), parse_mode="HTML", reply_markup=keyboard)
 
 
 async def cmd_get_story(message: types.Message):
-    buttons = [
-        types.InlineKeyboardButton(text="About love 😘😍", callback_data="story_love"),
-        types.InlineKeyboardButton(text="About superheroes 🦸", callback_data="story_superheroes"),
-        types.InlineKeyboardButton(text="About friendship 🤜🤛", callback_data="story_friendship")
-    ]
-    keyboard = types.InlineKeyboardMarkup(row_width=1)
-    keyboard.add(*buttons)
-    await message.answer("Select your story 📖", reply_markup=keyboard)
+    await message.answer(fmt.hbold("Select your story 📖"), parse_mode="HTML", reply_markup=get_story_keyboard())
 
 
 @dp.callback_query_handler(text="story_love")
 async def send_story_love(call: types.CallbackQuery):
-    await call.message.answer("Here is your story about love:\n" + get_story())
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(types.InlineKeyboardButton(text="Get another one 📖", callback_data="another_one"))
+    await call.message.answer(
+        fmt.text(fmt.hbold("Here is your story about love:\n"), "\n" + get_story()
+        ), parse_mode="HTML", reply_markup=keyboard)
     await call.answer()
 
 
 @dp.callback_query_handler(text="story_superheroes")
-async def send_story_love(call: types.CallbackQuery):
-    await call.message.answer("Here is your story about superheroes:\n" + get_story())
+async def send_story_superheroes(call: types.CallbackQuery):
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(types.InlineKeyboardButton(text="Get another one 📖", callback_data="another_one"))
+    await call.message.answer(
+        fmt.text(fmt.hbold("Here is your story about superheroes:\n"), "\n" + get_story()
+        ), parse_mode="HTML", reply_markup=keyboard)
     await call.answer()
 
 
 @dp.callback_query_handler(text="story_friendship")
-async def send_story_love(call: types.CallbackQuery):
-    await call.message.answer("Here is your story about friendship:\n" + get_story())
+async def send_story_friendship(call: types.CallbackQuery):
+    keyboard = types.InlineKeyboardMarkup()
+    keyboard.add(types.InlineKeyboardButton(text="Get another one 📖", callback_data="another_one"))
+    await call.message.answer(
+        fmt.text(fmt.hbold("Here is your story about friendship:"), "\n" + get_story()
+        ), parse_mode="HTML", reply_markup=keyboard)
+    await call.answer()
+
+
+@dp.callback_query_handler(text="another_one")
+async def another_one(call: types.CallbackQuery):
+    await bot.send_message(chat_id=call.message.chat.id, text=fmt.hbold("Select your story 📖"), parse_mode="HTML", reply_markup=get_story_keyboard())
     await call.answer()
 
 
@@ -70,7 +100,8 @@ dp.register_message_handler(cmd_info, commands=["info"])
 dp.register_message_handler(cmd_info, text="Info")
 
 dp.register_message_handler(cmd_get_story, commands=["story"])
-dp.register_message_handler(cmd_get_story, text="Read a story")
+dp.register_message_handler(cmd_get_story, text="Get a story")
+
 
 # Method to response to a text message.
 @dp.message_handler(content_types=['text'])
